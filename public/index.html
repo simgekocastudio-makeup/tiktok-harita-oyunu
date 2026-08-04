@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Harita Kapışması</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #0f172a;
+            color: #fff;
+            font-family: sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+        #game-board {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+        }
+        .info-box {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            padding: 12px 24px;
+            border-radius: 30px;
+            border: 2px solid #38bdf8;
+            font-weight: bold;
+            text-align: center;
+            z-index: 10;
+        }
+        .player-node {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .player-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid #ef4444;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
+            object-fit: cover;
+        }
+        .player-name {
+            font-size: 12px;
+            margin-top: 4px;
+            background: rgba(0,0,0,0.7);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-board">
+        <div class="info-box">
+            ❤️ 50 BEĞENİ = HARİTADA YER AL<br>
+            🌹 JETON / GÜL = ALANINI BÜYÜT
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const board = document.getElementById('game-board');
+        const players = {};
+
+        // 50 BEĞENİ ATAN KULLANICIYI EKRANA BASSIN
+        socket.on('spawnPlayer', (data) => {
+            if (players[data.username]) return; // Zaten varsa tekrar basma
+
+            const playerEl = document.createElement('div');
+            playerEl.className = 'player-node';
+            
+            // Ekran üzerinde rastgele koordinat
+            const randomX = Math.floor(Math.random() * (window.innerWidth - 100)) + 20;
+            const randomY = Math.floor(Math.random() * (window.innerHeight - 150)) + 80;
+            
+            playerEl.style.left = randomX + 'px';
+            playerEl.style.top = randomY + 'px';
+
+            playerEl.innerHTML = `
+                <img class="player-avatar" src="${data.profilePic}" alt="${data.username}">
+                <span class="player-name">${data.username}</span>
+            `;
+
+            board.appendChild(playerEl);
+            players[data.username] = { element: playerEl, scale: 1 };
+        });
+
+        // JETON ATAN KULLANICININ PROFiLİNİ BÜYÜTSÜN
+        socket.on('boostPlayer', (data) => {
+            if (players[data.username]) {
+                players[data.username].scale += 0.2 * data.repeatCount;
+                const avatar = players[data.username].element.querySelector('.player-avatar');
+                avatar.style.transform = `scale(${players[data.username].scale})`;
+                avatar.style.borderColor = '#22c55e'; // Yeşil renk parlaması
+            }
+        });
+    </script>
+</body>
+</html>
